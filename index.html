@@ -329,7 +329,6 @@
             <div class="metric-label">Compare metric:</div>
             <div class="metric-buttons">
                 <div class="metric-button active" onclick="selectMetric('vp')">Virtual Price</div>
-                <div class="metric-button" onclick="selectMetric('xcp')">XCP Profit</div>
                 <div class="metric-button" onclick="selectMetric('xcp_a')">XCP Profit A</div>
                 <div class="metric-button" onclick="selectMetric('xcpx')">XCPX</div>
             </div>
@@ -409,11 +408,11 @@
             tBTC: baseColors
         };
 
-        // Разные цвета для пулов в режиме сравнения
+        // Разные цвета для пулов в режиме сравнения (совпадают с эмодзи на кнопках)
         const compareColors = {
-            WBTC: 'rgb(255, 99, 132)',     // красный
-            cbBTC: 'rgb(54, 162, 235)',    // синий
-            tBTC: 'rgb(75, 192, 192)'      // зеленый
+            WBTC: 'rgb(255, 149, 0)',      // 🟠 оранжевый
+            cbBTC: 'rgb(54, 162, 235)',    // 🔵 синий
+            tBTC: 'rgb(52, 199, 89)'       // 🟢 зеленый
         };
 
         function selectPool(poolName) {
@@ -503,7 +502,6 @@
                 // Show metrics legend
                 const items = [
                     { key: 'vp', label: 'Virtual Price (vp)', color: poolColors[poolName].vp },
-                    { key: 'xcp', label: 'XCP Profit', color: poolColors[poolName].xcp },
                     { key: 'xcp_a', label: 'XCP Profit A', color: poolColors[poolName].xcp_a },
                     { key: 'xcpx', label: 'XCPX', color: poolColors[poolName].xcpx }
                 ];
@@ -533,7 +531,7 @@
                 targetIndex = datasets.findIndex(ds => ds.label === key);
             } else {
                 // Find dataset by metric
-                const keys = ['vp', 'xcp', 'xcp_a', 'xcpx'];
+                const keys = ['vp', 'xcp_a', 'xcpx'];
                 targetIndex = keys.indexOf(key);
             }
 
@@ -567,7 +565,6 @@
                 // Compare selected metric across all pools with normalization
                 const metricNames = {
                     vp: 'Virtual Price',
-                    xcp: 'XCP Profit',
                     xcp_a: 'XCP Profit A',
                     xcpx: 'XCPX'
                 };
@@ -613,7 +610,6 @@
                 const poolData = data.pools[poolName];
                 const timestamps = poolData.map(d => new Date(d.timestamp * 1000));
                 const vps = poolData.map(d => d.vp);
-                const xcps = poolData.map(d => d.xcp);
                 const xcpa = poolData.map(d => d.xcp_a);
                 const xcpx = poolData.map(d => d.xcpx);
 
@@ -622,16 +618,6 @@
                         label: 'vp',
                         data: vps,
                         borderColor: poolColors[poolName].vp,
-                        backgroundColor: 'transparent',
-                        borderWidth: 2,
-                        pointRadius: 0,
-                        pointHoverRadius: 5,
-                        tension: 0.1
-                    },
-                    {
-                        label: 'xcp',
-                        data: xcps,
-                        borderColor: poolColors[poolName].xcp,
                         backgroundColor: 'transparent',
                         borderWidth: 2,
                         pointRadius: 0,
