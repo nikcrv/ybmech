@@ -80,6 +80,52 @@
             border-color: transparent;
         }
 
+        .metric-selector {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            padding: 15px 20px;
+            background: #f1f3f5;
+            border-bottom: 2px solid #e9ecef;
+            flex-wrap: wrap;
+        }
+
+        .metric-label {
+            font-weight: 600;
+            color: #495057;
+            font-size: 1em;
+        }
+
+        .metric-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .metric-button {
+            padding: 8px 20px;
+            background: white;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.95em;
+            font-weight: 500;
+            transition: all 0.3s;
+            color: #495057;
+        }
+
+        .metric-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .metric-button.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: transparent;
+        }
+
         .stats {
             display: flex;
             justify-content: space-around;
@@ -279,6 +325,16 @@
             <div class="pool-button" onclick="selectPool('COMPARE')">📊 Compare All</div>
         </div>
 
+        <div class="metric-selector" id="metricSelector" style="display: none;">
+            <div class="metric-label">Compare metric:</div>
+            <div class="metric-buttons">
+                <div class="metric-button active" onclick="selectMetric('vp')">Virtual Price</div>
+                <div class="metric-button" onclick="selectMetric('xcp')">XCP Profit</div>
+                <div class="metric-button" onclick="selectMetric('xcp_a')">XCP Profit A</div>
+                <div class="metric-button" onclick="selectMetric('xcpx')">XCPX</div>
+            </div>
+        </div>
+
         <div class="stats" id="stats">
             <div class="stat-card">
                 <div class="stat-label">Total Blocks</div>
@@ -329,6 +385,7 @@
         let chart = null;
         let fullData = null;
         let currentPool = 'WBTC';
+        let compareMetric = 'vp';
 
         const colors = {
             vp: 'rgb(31, 119, 180)',
@@ -352,6 +409,13 @@
             tBTC: baseColors
         };
 
+        // Разные цвета для пулов в режиме сравнения
+        const compareColors = {
+            WBTC: 'rgb(255, 99, 132)',     // красный
+            cbBTC: 'rgb(54, 162, 235)',    // синий
+            tBTC: 'rgb(75, 192, 192)'      // зеленый
+        };
+
         function selectPool(poolName) {
             currentPool = poolName;
 
@@ -361,10 +425,34 @@
             });
             event.target.classList.add('active');
 
+            // Show/hide metric selector for COMPARE mode
+            const metricSelector = document.getElementById('metricSelector');
+            if (poolName === 'COMPARE') {
+                metricSelector.style.display = 'flex';
+            } else {
+                metricSelector.style.display = 'none';
+            }
+
             // Update chart and stats
             if (fullData) {
                 updateStats(fullData, poolName);
                 createChart(fullData, poolName);
+                setupSliders();
+            }
+        }
+
+        function selectMetric(metric) {
+            compareMetric = metric;
+
+            // Update button states
+            document.querySelectorAll('.metric-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // Update chart if in COMPARE mode
+            if (fullData && currentPool === 'COMPARE') {
+                createChart(fullData, currentPool);
                 setupSliders();
             }
         }
@@ -398,15 +486,15 @@
             legendContainer.innerHTML = '';
 
             if (poolName === 'COMPARE') {
-                // Show pools legend
+                // Show pools legend with compare colors
                 const pools = ['WBTC', 'cbBTC', 'tBTC'];
                 pools.forEach(pool => {
                     const div = document.createElement('div');
                     div.className = 'legend-item';
                     div.id = `legend-${pool}`;
                     div.innerHTML = `
-                        <div class="legend-color" style="background-color: ${poolColors[pool].vp}"></div>
-                        <span class="legend-label">${pool} vPrice</span>
+                        <div class="legend-color" style="background-color: ${compareColors[pool]}"></div>
+                        <span class="legend-label">${pool}</span>
                     `;
                     div.onclick = () => toggleDataset(pool);
                     legendContainer.appendChild(div);
@@ -476,19 +564,29 @@
             let chartTitle = '';
 
             if (poolName === 'COMPARE') {
-                // Compare vPrice across all pools
-                chartTitle = `Comparing vPrice across all pools (${data.blocks.length} blocks)`;
+                // Compare selected metric across all pools with normalization
+                const metricNames = {
+                    vp: 'Virtual Price',
+                    xcp: 'XCP Profit',
+                    xcp_a: 'XCP Profit A',
+                    xcpx: 'XCPX'
+                };
+                chartTitle = `Comparing ${metricNames[compareMetric]} (normalized, first point = 0)`;
 
                 const pools = ['WBTC', 'cbBTC', 'tBTC'];
                 pools.forEach(pool => {
                     const poolData = data.pools[pool];
                     const timestamps = poolData.map(d => new Date(d.timestamp * 1000));
-                    const vps = poolData.map(d => d.vp);
+                    const rawValues = poolData.map(d => d[compareMetric]);
+
+                    // Normalize: first point = 0, others relative to first
+                    const firstValue = rawValues[0];
+                    const normalizedValues = rawValues.map(v => v - firstValue);
 
                     datasets.push({
                         label: pool,
-                        data: vps,
-                        borderColor: poolColors[pool].vp,
+                        data: normalizedValues,
+                        borderColor: compareColors[pool],
                         backgroundColor: 'transparent',
                         borderWidth: 2,
                         pointRadius: 0,
