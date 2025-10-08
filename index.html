@@ -361,8 +361,9 @@
             });
             event.target.classList.add('active');
 
-            // Update chart
+            // Update chart and stats
             if (fullData) {
+                updateStats(fullData, poolName);
                 createChart(fullData, poolName);
                 setupSliders();
             }
