@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YB Multi-Pools Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .pools-selector {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+            flex-wrap: wrap;
+        }
+
+        .pool-button {
+            padding: 12px 30px;
+            background: white;
+            border: 2px solid #dee2e6;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: 600;
+            transition: all 0.3s;
+            color: #495057;
+        }
+
+        .pool-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .pool-button.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: transparent;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            padding: 20px;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .stat-card {
+            text-align: center;
+            padding: 15px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            min-width: 140px;
+            flex: 1;
+        }
+
+        .stat-label {
+            font-size: 0.85em;
+            color: #6c757d;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #495057;
+        }
+
+        .chart-container {
+            padding: 40px;
+            position: relative;
+            height: 600px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 100px;
+            font-size: 1.2em;
+            color: #6c757d;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 20px;
+            margin: 20px;
+            border-radius: 10px;
+            border: 1px solid #f5c6cb;
+        }
+
+        .controls {
+            padding: 20px 40px;
+            background: #f8f9fa;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .legend-custom {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            padding: 20px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 5px;
+            transition: background 0.2s;
+        }
+
+        .legend-item:hover {
+            background: #f8f9fa;
+        }
+
+        .legend-item.hidden {
+            opacity: 0.5;
+        }
+
+        .legend-color {
+            width: 30px;
+            height: 3px;
+            border-radius: 2px;
+        }
+
+        .range-slider-container {
+            padding: 20px 40px;
+            background: #f8f9fa;
+            border-top: 2px solid #e9ecef;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            background: #d3d3d3;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .slider-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        .range-info {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            font-size: 0.9em;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>YB Multi-Pools Dashboard</h1>
+            <p>Comparing WBTC, cbBTC, and tBTC YB pools</p>
+        </div>
+
+        <div class="pools-selector">
+            <div class="pool-button active" onclick="selectPool('WBTC')">🟠 WBTC Pool</div>
+            <div class="pool-button" onclick="selectPool('cbBTC')">🔵 cbBTC Pool</div>
+            <div class="pool-button" onclick="selectPool('tBTC')">🟢 tBTC Pool</div>
+            <div class="pool-button" onclick="selectPool('COMPARE')">📊 Compare All</div>
+        </div>
+
+        <div class="stats" id="stats">
+            <div class="stat-card">
+                <div class="stat-label">Total Blocks</div>
+                <div class="stat-value" id="totalBlocks">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Time Range</div>
+                <div class="stat-value" id="timeRange">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Current vPrice</div>
+                <div class="stat-value" id="currentVp">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Last Updated</div>
+                <div class="stat-value" id="lastUpdated">-</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button onclick="location.reload()">🔄 Refresh Page</button>
+            <button onclick="resetZoom()">🔍 Reset Zoom</button>
+            <button onclick="toggleAllDatasets()">👁️ Toggle All</button>
+        </div>
+
+        <div class="legend-custom" id="legend"></div>
+
+        <div id="loading" class="loading">Loading data...</div>
+        <div id="error" class="error" style="display: none;"></div>
+
+        <div class="chart-container" style="display: none;" id="chartContainer">
+            <canvas id="priceChart"></canvas>
+        </div>
+
+        <div class="range-slider-container" style="display: none;" id="sliderContainer">
+            <div class="slider-labels">
+                <span>Start: <span id="startLabel">-</span></span>
+                <span>End: <span id="endLabel">-</span></span>
+            </div>
+            <input type="range" id="startSlider" class="range-slider" min="0" max="100" value="0">
+            <input type="range" id="endSlider" class="range-slider" min="0" max="100" value="100" style="margin-top: 10px;">
+            <div class="range-info">
+                <span>Drag sliders to select time range</span>
+                <span id="selectedRange">-</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://raw.githubusercontent.com/nikcrv/ybmech/master/yb_multipools_data.js"></script>
+
+    <script>
+        let chart = null;
+        let fullData = null;
+        let currentPool = 'WBTC';
+
+        const colors = {
+            vp: 'rgb(31, 119, 180)',
+            xcp: 'rgb(255, 127, 14)',
+            xcp_a: 'rgb(44, 160, 44)',
+            xcpx: 'rgb(0, 0, 0)'
+        };
+
+        const poolColors = {
+            WBTC: { vp: 'rgb(255, 152, 0)', xcp: 'rgb(255, 193, 7)', xcp_a: 'rgb(255, 235, 59)', xcpx: 'rgb(230, 126, 34)' },
+            cbBTC: { vp: 'rgb(33, 150, 243)', xcp: 'rgb(3, 169, 244)', xcp_a: 'rgb(0, 188, 212)', xcpx: 'rgb(25, 118, 210)' },
+            tBTC: { vp: 'rgb(76, 175, 80)', xcp: 'rgb(139, 195, 74)', xcp_a: 'rgb(205, 220, 57)', xcpx: 'rgb(56, 142, 60)' }
+        };
+
+        function selectPool(poolName) {
+            currentPool = poolName;
+
+            // Update button states
+            document.querySelectorAll('.pool-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // Update chart
+            if (fullData) {
+                createChart(fullData, poolName);
+                setupSliders();
+            }
+        }
+
+        function updateStats(data, poolName) {
+            const totalBlocks = data.blocks.length;
+
+            if (poolName === 'COMPARE') {
+                // Show stats for first pool
+                poolName = 'WBTC';
+            }
+
+            const poolData = data.pools[poolName];
+            if (!poolData || poolData.length === 0) return;
+
+            const firstTime = new Date(poolData[0].timestamp * 1000);
+            const lastTime = new Date(poolData[poolData.length - 1].timestamp * 1000);
+            const currentVp = poolData[poolData.length - 1].vp.toFixed(6);
+
+            const daysDiff = Math.round((lastTime - firstTime) / (1000 * 60 * 60 * 24));
+
+            document.getElementById('totalBlocks').textContent = totalBlocks.toLocaleString();
+            document.getElementById('timeRange').textContent = `${daysDiff} days`;
+            document.getElementById('currentVp').textContent = currentVp;
+            document.getElementById('lastUpdated').textContent = data.last_updated ?
+                new Date(data.last_updated).toLocaleString() : 'N/A';
+        }
+
+        function createLegend(poolName) {
+            const legendContainer = document.getElementById('legend');
+            legendContainer.innerHTML = '';
+
+            if (poolName === 'COMPARE') {
+                // Show pools legend
+                const pools = ['WBTC', 'cbBTC', 'tBTC'];
+                pools.forEach(pool => {
+                    const div = document.createElement('div');
+                    div.className = 'legend-item';
+                    div.id = `legend-${pool}`;
+                    div.innerHTML = `
+                        <div class="legend-color" style="background-color: ${poolColors[pool].vp}"></div>
+                        <span class="legend-label">${pool} vPrice</span>
+                    `;
+                    div.onclick = () => toggleDataset(pool);
+                    legendContainer.appendChild(div);
+                });
+            } else {
+                // Show metrics legend
+                const items = [
+                    { key: 'vp', label: 'Virtual Price (vp)', color: poolColors[poolName].vp },
+                    { key: 'xcp', label: 'XCP Profit', color: poolColors[poolName].xcp },
+                    { key: 'xcp_a', label: 'XCP Profit A', color: poolColors[poolName].xcp_a },
+                    { key: 'xcpx', label: 'XCPX', color: poolColors[poolName].xcpx }
+                ];
+
+                items.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'legend-item';
+                    div.id = `legend-${item.key}`;
+                    div.innerHTML = `
+                        <div class="legend-color" style="background-color: ${item.color}"></div>
+                        <span class="legend-label">${item.label}</span>
+                    `;
+                    div.onclick = () => toggleDataset(item.key);
+                    legendContainer.appendChild(div);
+                });
+            }
+        }
+
+        function toggleDataset(key) {
+            if (!chart) return;
+
+            const datasets = chart.data.datasets;
+            let targetIndex = -1;
+
+            if (currentPool === 'COMPARE') {
+                // Find dataset by pool name
+                targetIndex = datasets.findIndex(ds => ds.label === key);
+            } else {
+                // Find dataset by metric
+                const keys = ['vp', 'xcp', 'xcp_a', 'xcpx'];
+                targetIndex = keys.indexOf(key);
+            }
+
+            if (targetIndex !== -1) {
+                const meta = chart.getDatasetMeta(targetIndex);
+                meta.hidden = !meta.hidden;
+                chart.update();
+
+                const legendItem = document.getElementById(`legend-${key}`);
+                if (legendItem) {
+                    if (meta.hidden) {
+                        legendItem.classList.add('hidden');
+                    } else {
+                        legendItem.classList.remove('hidden');
+                    }
+                }
+            }
+        }
+
+        function toggleAllDatasets() {
+            if (!chart) return;
+
+            const firstMeta = chart.getDatasetMeta(0);
+            const shouldHide = !firstMeta.hidden;
+
+            chart.data.datasets.forEach((dataset, index) => {
+                const meta = chart.getDatasetMeta(index);
+                meta.hidden = shouldHide;
+            });
+
+            document.querySelectorAll('.legend-item').forEach(item => {
+                if (shouldHide) {
+                    item.classList.add('hidden');
+                } else {
+                    item.classList.remove('hidden');
+                }
+            });
+
+            chart.update();
+        }
+
+        function createChart(data, poolName) {
+            const ctx = document.getElementById('priceChart').getContext('2d');
+
+            if (chart) {
+                chart.destroy();
+            }
+
+            let datasets = [];
+            let chartTitle = '';
+
+            if (poolName === 'COMPARE') {
+                // Compare vPrice across all pools
+                chartTitle = `Comparing vPrice across all pools (${data.blocks.length} blocks)`;
+
+                const pools = ['WBTC', 'cbBTC', 'tBTC'];
+                pools.forEach(pool => {
+                    const poolData = data.pools[pool];
+                    const timestamps = poolData.map(d => new Date(d.timestamp * 1000));
+                    const vps = poolData.map(d => d.vp);
+
+                    datasets.push({
+                        label: pool,
+                        data: vps,
+                        borderColor: poolColors[pool].vp,
+                        backgroundColor: 'transparent',
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        pointHoverRadius: 5,
+                        tension: 0.1
+                    });
+                });
+
+                // Use timestamps from first pool
+                const timestamps = data.pools['WBTC'].map(d => new Date(d.timestamp * 1000));
+                chart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: timestamps,
+                        datasets: datasets
+                    },
+                    options: getChartOptions(chartTitle)
+                });
+
+            } else {
+                // Single pool view
+                chartTitle = `${poolName} YB vPrice History (${data.blocks.length} blocks)`;
+
+                const poolData = data.pools[poolName];
+                const timestamps = poolData.map(d => new Date(d.timestamp * 1000));
+                const vps = poolData.map(d => d.vp);
+                const xcps = poolData.map(d => d.xcp);
+                const xcpa = poolData.map(d => d.xcp_a);
+                const xcpx = poolData.map(d => d.xcpx);
+
+                datasets = [
+                    {
+                        label: 'vp',
+                        data: vps,
+                        borderColor: poolColors[poolName].vp,
+                        backgroundColor: 'transparent',
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        pointHoverRadius: 5,
+                        tension: 0.1
+                    },
+                    {
+                        label: 'xcp',
+                        data: xcps,
+                        borderColor: poolColors[poolName].xcp,
+                        backgroundColor: 'transparent',
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        pointHoverRadius: 5,
+                        tension: 0.1
+                    },
+                    {
+                        label: 'xcp_a',
+                        data: xcpa,
+                        borderColor: poolColors[poolName].xcp_a,
+                        backgroundColor: 'transparent',
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        pointHoverRadius: 5,
+                        tension: 0.1
+                    },
+                    {
+                        label: 'xcpx',
+                        data: xcpx,
+                        borderColor: poolColors[poolName].xcpx,
+                        backgroundColor: 'transparent',
+                        borderWidth: 3,
+                        pointRadius: 0,
+                        pointHoverRadius: 5,
+                        tension: 0.1
+                    }
+                ];
+
+                chart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: timestamps,
+                        datasets: datasets
+                    },
+                    options: getChartOptions(chartTitle)
+                });
+            }
+
+            createLegend(poolName);
+        }
+
+        function getChartOptions(title) {
+            return {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    title: {
+                        display: true,
+                        text: title,
+                        font: {
+                            size: 18,
+                            weight: 'bold'
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        titleFont: { size: 14 },
+                        bodyFont: { size: 13 },
+                        padding: 12,
+                        displayColors: true,
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label + ': ' + context.parsed.y.toFixed(6);
+                            }
+                        }
+                    },
+                    zoom: {
+                        zoom: {
+                            wheel: {
+                                enabled: true,
+                                speed: 0.1
+                            },
+                            pinch: {
+                                enabled: true
+                            },
+                            mode: 'x',
+                        },
+                        pan: {
+                            enabled: true,
+                            mode: 'x',
+                        },
+                        limits: {
+                            x: {
+                                min: 'original',
+                                max: 'original'
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        type: 'time',
+                        time: {
+                            unit: 'day',
+                            displayFormats: {
+                                day: 'MMM dd'
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Date',
+                            font: { size: 14 }
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Value',
+                            font: { size: 14 }
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        }
+                    }
+                }
+            };
+        }
+
+        function resetZoom() {
+            if (chart) {
+                chart.resetZoom();
+            }
+            document.getElementById('startSlider').value = 0;
+            document.getElementById('endSlider').value = fullData.blocks.length - 1;
+            updateSliderLabels();
+        }
+
+        function setupSliders() {
+            const startSlider = document.getElementById('startSlider');
+            const endSlider = document.getElementById('endSlider');
+
+            startSlider.max = fullData.blocks.length - 1;
+            endSlider.max = fullData.blocks.length - 1;
+            endSlider.value = fullData.blocks.length - 1;
+
+            startSlider.removeEventListener('input', handleSliderChange);
+            endSlider.removeEventListener('input', handleSliderChange);
+
+            startSlider.addEventListener('input', handleSliderChange);
+            endSlider.addEventListener('input', handleSliderChange);
+
+            updateSliderLabels();
+        }
+
+        function handleSliderChange() {
+            const startSlider = document.getElementById('startSlider');
+            const endSlider = document.getElementById('endSlider');
+
+            let startIdx = parseInt(startSlider.value);
+            let endIdx = parseInt(endSlider.value);
+
+            if (startIdx >= endIdx) {
+                if (this === startSlider) {
+                    endIdx = startIdx + 1;
+                    endSlider.value = endIdx;
+                } else {
+                    startIdx = endIdx - 1;
+                    startSlider.value = startIdx;
+                }
+            }
+
+            updateSliderLabels();
+            filterDataByRange(startIdx, endIdx);
+        }
+
+        function updateSliderLabels() {
+            const startIdx = parseInt(document.getElementById('startSlider').value);
+            const endIdx = parseInt(document.getElementById('endSlider').value);
+
+            const poolData = fullData.pools[currentPool === 'COMPARE' ? 'WBTC' : currentPool];
+            const startDate = new Date(poolData[startIdx].timestamp * 1000);
+            const endDate = new Date(poolData[endIdx].timestamp * 1000);
+
+            document.getElementById('startLabel').textContent = startDate.toLocaleDateString();
+            document.getElementById('endLabel').textContent = endDate.toLocaleDateString();
+
+            const selectedBlocks = endIdx - startIdx + 1;
+            document.getElementById('selectedRange').textContent = `${selectedBlocks} blocks selected`;
+        }
+
+        function filterDataByRange(startIdx, endIdx) {
+            const filteredData = {
+                blocks: fullData.blocks.slice(startIdx, endIdx + 1),
+                pools: {},
+                last_updated: fullData.last_updated
+            };
+
+            Object.keys(fullData.pools).forEach(pool => {
+                filteredData.pools[pool] = fullData.pools[pool].slice(startIdx, endIdx + 1);
+            });
+
+            createChart(filteredData, currentPool);
+        }
+
+        function init() {
+            const loadingDiv = document.getElementById('loading');
+            const errorDiv = document.getElementById('error');
+            const chartContainer = document.getElementById('chartContainer');
+            const sliderContainer = document.getElementById('sliderContainer');
+
+            try {
+                if (typeof ybMultiPoolsData === 'undefined') {
+                    throw new Error('yb_multipools_data.js not found or data not loaded');
+                }
+
+                fullData = ybMultiPoolsData;
+
+                if (!fullData.blocks || !fullData.pools || fullData.blocks.length === 0) {
+                    throw new Error('Invalid data format or empty dataset');
+                }
+
+                updateStats(fullData, currentPool);
+                createChart(fullData, currentPool);
+                setupSliders();
+
+                loadingDiv.style.display = 'none';
+                chartContainer.style.display = 'block';
+                sliderContainer.style.display = 'block';
+
+            } catch (error) {
+                loadingDiv.style.display = 'none';
+                errorDiv.style.display = 'block';
+                errorDiv.innerHTML = `
+                    <h3>Error Loading Data</h3>
+                    <p>${error.message}</p>
+                    <p style="margin-top: 10px; font-size: 0.9em;">
+                        Make sure <code>yb_multipools_data.js</code> is in the same folder.
+                        Run: <code>python plot_tricrypto_multipools.py</code>
+                    </p>
+                `;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
