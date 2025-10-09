@@ -496,11 +496,22 @@
         let currentPool = 'WBTC';
         let compareMetric = 'vp';
 
-        // Загружаем данные с обходом кеша
+        // Загружаем данные с обходом кеша и ждем загрузки
         (function() {
             const timestamp = new Date().getTime();
             const script = document.createElement('script');
             script.src = `https://cdn.jsdelivr.net/gh/nikcrv/ybmech@master/yb_multipools_data.js?t=${timestamp}`;
+            script.onload = function() {
+                // Данные загружены, инициализируем дашборд
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', init);
+                } else {
+                    init();
+                }
+            };
+            script.onerror = function() {
+                console.error('Failed to load yb_multipools_data.js');
+            };
             document.head.appendChild(script);
         })();
 
@@ -963,8 +974,6 @@
                 `;
             }
         }
-
-        document.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
 </html>
