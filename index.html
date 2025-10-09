@@ -510,13 +510,19 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/gh/nikcrv/ybmech@master/yb_multipools_data.js"></script>
-
     <script>
         let chart = null;
         let fullData = null;
         let currentPool = 'WBTC';
         let compareMetric = 'vp';
+
+        // Загружаем данные с обходом кеша
+        (function() {
+            const timestamp = new Date().getTime();
+            const script = document.createElement('script');
+            script.src = `https://cdn.jsdelivr.net/gh/nikcrv/ybmech@master/yb_multipools_data.js?t=${timestamp}`;
+            document.head.appendChild(script);
+        })();
 
 
         // Базовые цвета для всех пулов
