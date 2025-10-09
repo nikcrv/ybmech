@@ -500,8 +500,10 @@
         (function() {
             const timestamp = new Date().getTime();
             const script = document.createElement('script');
-            script.src = `https://cdn.jsdelivr.net/gh/nikcrv/ybmech@master/yb_multipools_data.js?t=${timestamp}`;
+            // Используем raw.githubusercontent.com для обхода CDN кеша
+            script.src = `https://raw.githubusercontent.com/nikcrv/ybmech/master/yb_multipools_data.js?t=${timestamp}`;
             script.onload = function() {
+                console.log('Data loaded at:', new Date().toISOString());
                 // Данные загружены, инициализируем дашборд
                 if (document.readyState === 'loading') {
                     document.addEventListener('DOMContentLoaded', init);
