@@ -620,8 +620,20 @@
 
             // Update chart if in COMPARE mode
             if (fullData && currentPool === 'COMPARE') {
+                // Сохраняем текущие значения слайдеров
+                const startSlider = document.getElementById('startSlider');
+                const endSlider = document.getElementById('endSlider');
+                const savedStart = parseInt(startSlider.value);
+                const savedEnd = parseInt(endSlider.value);
+
                 createChart(fullData, currentPool);
                 setupSliders();
+
+                // Восстанавливаем сохраненные значения слайдеров
+                startSlider.value = savedStart;
+                endSlider.value = savedEnd;
+                updateSliderLabels();
+                filterDataByRange(savedStart, savedEnd);
             }
         }
 
