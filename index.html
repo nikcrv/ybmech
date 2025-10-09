@@ -519,12 +519,8 @@
 
                 // Используем SHA коммита для получения точной версии файла
                 const response = await fetch(`https://api.github.com/repos/nikcrv/ybmech/contents/yb_multipools_data.js?ref=${latestCommitSha || 'master'}`, {
-                    cache: 'no-cache',
                     headers: {
-                        'Accept': 'application/vnd.github.v3.raw',
-                        'Cache-Control': 'no-cache, no-store, must-revalidate',
-                        'Pragma': 'no-cache',
-                        'Expires': '0'
+                        'Accept': 'application/vnd.github.v3.raw'
                     }
                 });
 
