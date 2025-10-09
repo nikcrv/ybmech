@@ -407,7 +407,7 @@
             <div class="metric-label">Compare metric:</div>
             <div class="metric-buttons">
                 <div class="metric-button active" onclick="selectMetric('vp')">Virtual Price</div>
-                <div class="metric-button" onclick="selectMetric('xcp_a')">XCP Profit A</div>
+                <div class="metric-button" onclick="selectMetric('xcp')">XCP Profit</div>
                 <div class="metric-button" onclick="selectMetric('xcpx')">XCPX</div>
             </div>
         </div>
@@ -467,7 +467,7 @@
                 </div>
 
                 <div class="info-card">
-                    <h3>💰 XCP Profit A (xcp_a)</h3>
+                    <h3>💰 XCP Profit (xcp)</h3>
                     <p>Total fees captured by the pool over time.</p>
                     <p class="note">This value only increases as the pool generates fees from swaps and arbitrage.</p>
                 </div>
@@ -671,7 +671,7 @@
                 // Show metrics legend
                 const items = [
                     { key: 'vp', label: 'Virtual Price (vp)', color: poolColors[poolName].vp },
-                    { key: 'xcp_a', label: 'XCP Profit A', color: poolColors[poolName].xcp_a },
+                    { key: 'xcp', label: 'XCP Profit', color: poolColors[poolName].xcp },
                     { key: 'xcpx', label: 'XCPX', color: poolColors[poolName].xcpx }
                 ];
 
@@ -734,7 +734,7 @@
                 // Compare selected metric across all pools with normalization
                 const metricNames = {
                     vp: 'Virtual Price',
-                    xcp_a: 'XCP Profit A',
+                    xcp: 'XCP Profit',
                     xcpx: 'XCPX'
                 };
                 chartTitle = `Comparing ${metricNames[compareMetric]} (normalized, first point = 0)`;
@@ -779,7 +779,7 @@
                 const poolData = data.pools[poolName];
                 const timestamps = poolData.map(d => new Date(d.timestamp * 1000));
                 const vps = poolData.map(d => d.vp);
-                const xcpa = poolData.map(d => d.xcp_a);
+                const xcps = poolData.map(d => d.xcp);
                 const xcpx = poolData.map(d => d.xcpx);
 
                 datasets = [
@@ -794,9 +794,9 @@
                         tension: 0.1
                     },
                     {
-                        label: 'xcp_a',
-                        data: xcpa,
-                        borderColor: poolColors[poolName].xcp_a,
+                        label: 'xcp',
+                        data: xcps,
+                        borderColor: poolColors[poolName].xcp,
                         backgroundColor: 'transparent',
                         borderWidth: 2,
                         pointRadius: 0,
