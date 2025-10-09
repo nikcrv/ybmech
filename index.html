@@ -515,7 +515,6 @@
 
                 const commits = await commitResponse.json();
                 const latestCommitSha = commits[0]?.sha;
-                console.log('Latest commit SHA:', latestCommitSha);
 
                 // Используем SHA коммита для получения точной версии файла
                 const response = await fetch(`https://api.github.com/repos/nikcrv/ybmech/contents/yb_multipools_data.js?ref=${latestCommitSha || 'master'}`, {
